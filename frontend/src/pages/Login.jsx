@@ -4,14 +4,15 @@ import { useAuth } from "../context/AuthContext";
 import "./Auth.css";
 
 const Login = () => {
-  const { login, loading, error, clearError } = useAuth();
+  const { login, logout, loading, error, clearError } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || "/";
 
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({ email: "", password: "", loginAs: "user" });
   const [formErrors, setFormErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+  const [sideError, setSideError] = useState("");
 
   const validate = () => {
     const e = {};
@@ -24,16 +25,24 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     clearError();
+    setSideError("");
     if (!validate()) return;
-    const res = await login(form.email, form.password);
-    if (res.success) navigate(from, { replace: true });
-  };
+    const res = await login(form.email.trim(), form.password.trim());
+    if (res.success) {
+      if (form.loginAs === "admin" && res.role !== "admin") {
+        logout();
+        setSideError("This account is not an admin account.");
+        return;
+      }
 
-  const fillDemo = (role) => {
-    if (role === "admin") setForm({ email: "alex@example.com", password: "password123" });
-    else setForm({ email: "sarah@example.com", password: "sarah456" });
-    setFormErrors({});
-    clearError();
+      if (form.loginAs === "user" && res.role === "admin") {
+        logout();
+        setSideError("This account is an admin account. Please select Admin Side.");
+        return;
+      }
+
+      navigate(form.loginAs === "admin" ? "/admin" : from, { replace: true });
+    }
   };
 
   return (
@@ -42,21 +51,12 @@ const Login = () => {
         <div className="auth-card">
           {/* Header */}
           <div className="auth-header">
-            <Link to="/" className="auth-logo">⚡ ShopNest</Link>
+            <Link to="/" className="auth-logo">⚡ JhaHub</Link>
             <h1 className="auth-title">Welcome Back</h1>
-            <p className="auth-subtitle">Sign in to your account to continue</p>
+            <p className="auth-subtitle">Sign in and choose your side</p>
           </div>
 
-          {/* Demo Buttons */}
-          <div className="auth-demos">
-            <p>Quick demo login:</p>
-            <div className="auth-demos__btns">
-              <button className="btn btn-secondary btn-sm" onClick={() => fillDemo("user")}>👤 Demo User</button>
-              <button className="btn btn-secondary btn-sm" onClick={() => fillDemo("admin")}>⚙️ Demo Admin</button>
-            </div>
-          </div>
-
-          <div className="auth-divider"><span>or sign in manually</span></div>
+          <div className="auth-divider"><span>Sign in manually</span></div>
 
           {/* Error Banner */}
           {error && (
@@ -64,18 +64,44 @@ const Login = () => {
               ⚠ {error}
             </div>
           )}
+          {sideError && (
+            <div className="auth-error-banner">
+              ⚠ {sideError}
+            </div>
+          )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="auth-form" noValidate>
+          <form onSubmit={handleSubmit} className="auth-form" noValidate autoComplete="off">
+            <div className="form-group">
+              <label className="form-label">Login Side</label>
+              <select
+                className="form-select"
+                value={form.loginAs}
+                onChange={(e) => {
+                  setForm({ email: "", password: "", loginAs: e.target.value });
+                  setFormErrors({});
+                  setSideError("");
+                }}
+              >
+                <option value="user">User Side</option>
+                <option value="admin">Admin Side</option>
+              </select>
+            </div>
+
             <div className="form-group">
               <label className="form-label">Email Address</label>
               <input
                 type="email"
+                name="manual_email_entry"
                 className={`form-input ${formErrors.email ? "error" : ""}`}
-                placeholder="you@example.com"
+                placeholder=""
                 value={form.email}
-                onChange={(e) => { setForm((f) => ({ ...f, email: e.target.value })); setFormErrors((fe) => ({ ...fe, email: "" })); }}
-                autoComplete="email"
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, email: e.target.value }));
+                  setFormErrors((fe) => ({ ...fe, email: "" }));
+                  setSideError("");
+                }}
+                autoComplete="new-password"
               />
               {formErrors.email && <span className="auth-field-error">{formErrors.email}</span>}
             </div>
@@ -85,11 +111,16 @@ const Login = () => {
               <div className="auth-password-wrap">
                 <input
                   type={showPassword ? "text" : "password"}
+                  name="manual_password_entry"
                   className={`form-input ${formErrors.password ? "error" : ""}`}
-                  placeholder="••••••••"
+                  placeholder=""
                   value={form.password}
-                  onChange={(e) => { setForm((f) => ({ ...f, password: e.target.value })); setFormErrors((fe) => ({ ...fe, password: "" })); }}
-                  autoComplete="current-password"
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, password: e.target.value }));
+                    setFormErrors((fe) => ({ ...fe, password: "" }));
+                    setSideError("");
+                  }}
+                  autoComplete="new-password"
                 />
                 <button type="button" className="auth-password-toggle" onClick={() => setShowPassword(!showPassword)}>
                   {showPassword ? "🙈" : "👁"}
@@ -104,7 +135,7 @@ const Login = () => {
           </form>
 
           <p className="auth-switch">
-            Don't have an account? <Link to="/signup">Create one →</Link>
+            Don't have an account? <Link to={form.loginAs === "admin" ? "/admin/signup" : "/signup"}>Create one →</Link>
           </p>
         </div>
       </div>

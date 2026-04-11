@@ -28,6 +28,8 @@ const AppRoutes = () => {
       <Route path="/cart" element={<Cart />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/admin/login" element={<Login />} />
+      <Route path="/admin/signup" element={<Signup />} />
 
       {/* Protected User Routes */}
       <Route element={<ProtectedRoute />}>
@@ -36,7 +38,7 @@ const AppRoutes = () => {
       </Route>
 
       {/* Protected Admin Routes */}
-      <Route path="/admin" element={<ProtectedRoute adminOnly><AdminLayout /></ProtectedRoute>}>
+      <Route path="/admin" element={<ProtectedRoute requireAdmin><AdminLayout /></ProtectedRoute>}>
         <Route index element={<AdminDashboard />} />
         <Route path="products" element={<AdminProducts />} />
         <Route path="orders" element={<AdminOrders />} />

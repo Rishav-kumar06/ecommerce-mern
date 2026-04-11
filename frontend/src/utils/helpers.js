@@ -1,5 +1,5 @@
 export const formatPrice = (price) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(price);
+  new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(price);
 
 export const formatDate = (dateStr) => {
   if (!dateStr) return "N/A";

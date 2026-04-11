@@ -127,7 +127,7 @@ const Products = () => {
               <div className="products-sidebar__price-inputs">
                 <input
                   type="number"
-                  placeholder="Min $"
+                  placeholder="Min Rs"
                   value={priceInput.min}
                   onChange={(e) => setPriceInput((p) => ({ ...p, min: e.target.value }))}
                   className="form-input"
@@ -136,7 +136,7 @@ const Products = () => {
                 <span>—</span>
                 <input
                   type="number"
-                  placeholder="Max $"
+                  placeholder="Max Rs"
                   value={priceInput.max}
                   onChange={(e) => setPriceInput((p) => ({ ...p, max: e.target.value }))}
                   className="form-input"
@@ -152,10 +152,10 @@ const Products = () => {
             <div className="products-sidebar__section">
               <h4>Quick Ranges</h4>
               {[
-                { label: "Under $50", min: 0, max: 50 },
-                { label: "$50 – $150", min: 50, max: 150 },
-                { label: "$150 – $300", min: 150, max: 300 },
-                { label: "$300+", min: 300, max: Infinity },
+                { label: "Under Rs 50", min: 0, max: 50 },
+                { label: "Rs 50 – Rs 150", min: 50, max: 150 },
+                { label: "Rs 150 – Rs 300", min: 150, max: 300 },
+                { label: "Rs 300+", min: 300, max: Infinity },
               ].map((r) => (
                 <button
                   key={r.label}

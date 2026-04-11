@@ -2,20 +2,26 @@ import { useState } from "react";
 import { useProducts } from "../context/ProductContext";
 import { formatPrice } from "../utils/helpers";
 import Loader from "../components/Loader";
+import { LOCAL_STORAGE_KEYS } from "../utils/constants";
+import { adminAddProduct, adminDeleteProduct, adminUpdateProduct } from "../services/fakeApi";
+
+const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=80";
 
 const AdminProducts = () => {
-  const { allProducts, deleteProduct, addProduct, updateProduct, loading } = useProducts();
+  const { allProducts, reload, loading } = useProducts();
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Form State
   const [form, setForm] = useState({
     name: "",
     category: "electronics",
     price: "",
     stock: "",
     brand: "",
+    imageUrl: "",
     description: "",
   });
 
@@ -36,35 +42,58 @@ const AdminProducts = () => {
         price: product.price,
         stock: product.stock,
         brand: product.brand,
+        imageUrl: product.images?.[0] || "",
         description: product.description,
       });
     } else {
       setEditing(null);
-      setForm({ name: "", category: "electronics", price: "", stock: "", brand: "", description: "" });
+      setForm({ name: "", category: "electronics", price: "", stock: "", brand: "", imageUrl: "", description: "" });
     }
+    setError(null);
     setIsModalOpen(true);
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
+    const { imageUrl: imageUrlField, ...restForm } = form;
+    const imageUrl = imageUrlField.trim();
     const payload = {
-      ...form,
+      ...restForm,
       price: parseFloat(form.price),
-      stock: parseInt(form.stock),
-      images: editing ? editing.images : ["https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=80"],
+      stock: parseInt(form.stock, 10),
+      images: imageUrl ? [imageUrl] : editing?.images?.length ? editing.images : [FALLBACK_IMAGE],
     };
 
-    if (editing) {
-      updateProduct({ ...editing, ...payload });
-    } else {
-      addProduct({ id: Date.now(), ...payload });
+    try {
+      setSaving(true);
+      setError(null);
+      const token = localStorage.getItem(LOCAL_STORAGE_KEYS.TOKEN);
+      const productId = editing?.id || editing?._id;
+
+      if (editing) {
+        await adminUpdateProduct(productId, payload, token);
+      } else {
+        await adminAddProduct(payload, token);
+      }
+
+      await reload();
+      setIsModalOpen(false);
+    } catch (err) {
+      setError(err.message || "Failed to save product");
+    } finally {
+      setSaving(false);
     }
-    setIsModalOpen(false);
   };
 
-  const handleDelete = (id) => {
-    if (confirm("Are you sure you want to delete this product?")) {
-      deleteProduct(id);
+  const handleDelete = async (id) => {
+    if (!confirm("Are you sure you want to delete this product?")) return;
+
+    try {
+      const token = localStorage.getItem(LOCAL_STORAGE_KEYS.TOKEN);
+      await adminDeleteProduct(id, token);
+      await reload();
+    } catch (err) {
+      setError(err.message || "Failed to delete product");
     }
   };
 
@@ -103,37 +132,40 @@ const AdminProducts = () => {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((product) => (
-                <tr key={product.id}>
-                  <td>
-                    <div className="admin-product-cell">
-                      <img src={product.images[0]} alt={product.name} />
-                      <div>
-                        <div className="admin-product-cell__name">{product.name}</div>
-                        <div className="admin-product-cell__brand">{product.brand}</div>
+              {filtered.map((product) => {
+                const productId = product.id || product._id;
+                return (
+                  <tr key={productId}>
+                    <td>
+                      <div className="admin-product-cell">
+                        <img src={product.images?.[0] || FALLBACK_IMAGE} alt={product.name} />
+                        <div>
+                          <div className="admin-product-cell__name">{product.name}</div>
+                          <div className="admin-product-cell__brand">{product.brand}</div>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td style={{ textTransform: "capitalize" }}>{product.category}</td>
-                  <td className="font-bold">{formatPrice(product.price)}</td>
-                  <td>
-                    <span className={product.stock < 10 ? "text-danger font-bold" : ""}>
-                      {product.stock} units
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`admin-badge ${product.stock > 0 ? "bg-success text-success-dark" : "bg-danger text-danger-dark"}`}>
-                      {product.stock > 0 ? "In Stock" : "Out of Stock"}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="admin-row-actions">
-                      <button className="btn-icon" onClick={() => handleOpenModal(product)} title="Edit">✏️</button>
-                      <button className="btn-icon text-danger" onClick={() => handleDelete(product.id)} title="Delete">🗑️</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td style={{ textTransform: "capitalize" }}>{product.category}</td>
+                    <td className="font-bold">{formatPrice(product.price)}</td>
+                    <td>
+                      <span className={product.stock < 10 ? "text-danger font-bold" : ""}>
+                        {product.stock} units
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`admin-badge ${product.stock > 0 ? "bg-success text-success-dark" : "bg-danger text-danger-dark"}`}>
+                        {product.stock > 0 ? "In Stock" : "Out of Stock"}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="admin-row-actions">
+                        <button className="btn-icon" onClick={() => handleOpenModal(product)} title="Edit">✏️</button>
+                        <button className="btn-icon text-danger" onClick={() => handleDelete(productId)} title="Delete">🗑️</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan="6" className="text-center" style={{ padding: "3rem" }}>No products found matching "{search}"</td>
@@ -144,7 +176,6 @@ const AdminProducts = () => {
         </div>
       </div>
 
-      {/* Modal */}
       {isModalOpen && (
         <div className="admin-modal-overlay">
           <div className="admin-modal">
@@ -152,6 +183,7 @@ const AdminProducts = () => {
               <h2>{editing ? "Edit Product" : "Add New Product"}</h2>
               <button className="btn-icon" onClick={() => setIsModalOpen(false)}>✕</button>
             </div>
+            {error && <div className="text-danger" style={{ padding: "0 1.25rem 1rem" }}>{error}</div>}
             <form onSubmit={handleSave} className="admin-modal__body">
               <div className="form-group">
                 <label className="form-label">Product Name *</label>
@@ -173,9 +205,19 @@ const AdminProducts = () => {
                   <input className="form-input" value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} />
                 </div>
               </div>
+              <div className="form-group">
+                <label className="form-label">Image URL</label>
+                <input
+                  type="url"
+                  className="form-input"
+                  placeholder="https://example.com/product-image.jpg"
+                  value={form.imageUrl}
+                  onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+                />
+              </div>
               <div className="admin-form-row">
                 <div className="form-group">
-                  <label className="form-label">Price ($) *</label>
+                  <label className="form-label">Price (Rs) *</label>
                   <input required type="number" min="0" step="0.01" className="form-input" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
                 </div>
                 <div className="form-group">
@@ -189,7 +231,7 @@ const AdminProducts = () => {
               </div>
               <div className="admin-modal__footer">
                 <button type="button" className="btn btn-ghost" onClick={() => setIsModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">{editing ? "Save Changes" : "Create Product"}</button>
+                <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? "Saving..." : editing ? "Save Changes" : "Create Product"}</button>
               </div>
             </form>
           </div>

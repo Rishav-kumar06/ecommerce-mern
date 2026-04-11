@@ -1,30 +1,48 @@
 import { useState, useEffect } from "react";
 import { fetchOrders, updateOrderStatus } from "../services/fakeApi";
 import { formatPrice, formatDate, getStatusColor, getStatusBg } from "../utils/helpers";
-import { ORDER_STATUSES } from "../utils/constants";
+import { ORDER_STATUSES, LOCAL_STORAGE_KEYS } from "../utils/constants";
 import Loader from "../components/Loader";
 
 const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [updating, setUpdating] = useState(null);
 
   useEffect(() => {
-    fetchOrders().then((res) => {
-      setOrders(res.data);
-      setLoading(false);
-    });
+    loadOrders();
   }, []);
+
+  const loadOrders = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem(LOCAL_STORAGE_KEYS.TOKEN);
+      if (!token) {
+        setError("Not authenticated");
+        return;
+      }
+      const res = await fetchOrders(token);
+      setOrders(res.data || []);
+    } catch (err) {
+      setError(err.message || "Failed to load orders");
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleStatusChange = async (orderId, newStatus) => {
     setUpdating(orderId);
     try {
-      const res = await updateOrderStatus(orderId, newStatus);
+      const token = localStorage.getItem(LOCAL_STORAGE_KEYS.TOKEN);
+      const res = await updateOrderStatus(orderId, newStatus, token);
       setOrders((prev) => prev.map((o) => (o.id === orderId ? res.data : o)));
     } catch (err) {
-      alert("Failed to update status");
+      alert("Failed to update status: " + err.message);
     } finally {
       setUpdating(null);
     }
@@ -66,6 +84,15 @@ const AdminOrders = () => {
         </div>
       </div>
 
+      {error && (
+        <div className="admin-panel" style={{ backgroundColor: "#fee", borderColor: "#f66", padding: "1rem" }}>
+          <strong>Error:</strong> {error}
+          <button onClick={loadOrders} style={{ marginLeft: "1rem" }} className="btn btn-primary btn-sm">
+            Retry
+          </button>
+        </div>
+      )}
+
       <div className="admin-panel">
         <div className="admin-table-wrap">
           <table className="admin-table">
@@ -81,25 +108,27 @@ const AdminOrders = () => {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((order) => (
-                <tr key={order.id}>
+              {filtered.length > 0 ? filtered.map((order) => (
+                <tr key={order.id || order._id}>
                   <td>
                     <div className="font-bold">{order.id}</div>
                     <div className="text-muted" style={{ fontSize: "0.75rem" }}>{formatDate(order.createdAt)}</div>
                   </td>
-                  <td>User #{order.userId}</td>
+                  <td>{order.user?.name || "Guest"} <br /> <span className="text-muted" style={{ fontSize: "0.75rem" }}>{order.user?.email || order.userId || "N/A"}</span></td>
                   <td>
                     <div className="admin-order-items-preview">
-                      <span className="font-bold">{order.items.reduce((acc, i) => acc + i.quantity, 0)} items</span>
-                      <span className="text-muted" style={{ fontSize: "0.75rem", display: "block" }}>
-                        {order.items[0].name} {order.items.length > 1 ? `+${order.items.length - 1} more` : ""}
-                      </span>
+                      <span className="font-bold">{order.items?.reduce((acc, i) => acc + (i.quantity || 0), 0) || 0} items</span>
+                      {order.items && order.items.length > 0 && (
+                        <span className="text-muted" style={{ fontSize: "0.75rem", display: "block" }}>
+                          {order.items[0]?.name} {order.items.length > 1 ? `+${order.items.length - 1} more` : ""}
+                        </span>
+                      )}
                     </div>
                   </td>
-                  <td className="font-bold">{formatPrice(order.total)}</td>
+                  <td className="font-bold">{formatPrice(order.total || 0)}</td>
                   <td>
                     <span className="admin-badge bg-elevated border text-secondary">
-                      {order.paymentMethod.replace("_", " ")}
+                      {order.paymentMethod?.replace?.(/_/g, " ") || "Unknown"}
                     </span>
                   </td>
                   <td>
@@ -113,7 +142,7 @@ const AdminOrders = () => {
                   <td>
                     <select
                       className="form-select admin-status-select"
-                      value={order.status}
+                      value={order.status || "pending"}
                       onChange={(e) => handleStatusChange(order.id, e.target.value)}
                       disabled={updating === order.id || order.status === "delivered" || order.status === "cancelled"}
                     >
@@ -123,8 +152,7 @@ const AdminOrders = () => {
                     </select>
                   </td>
                 </tr>
-              ))}
-              {filtered.length === 0 && (
+              )) : (
                 <tr>
                   <td colSpan="7" className="text-center" style={{ padding: "3rem" }}>No orders found matching your filters.</td>
                 </tr>

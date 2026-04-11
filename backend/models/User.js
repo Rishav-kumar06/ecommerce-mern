@@ -21,7 +21,11 @@ const userSchema = new mongoose.Schema(
     joinedAt: Date,
     isActive: { type: Boolean, default: true },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+  }
 );
 
 const User = mongoose.model("User", userSchema);

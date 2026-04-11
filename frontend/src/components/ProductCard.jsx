@@ -5,7 +5,12 @@ import "./ProductCard.css";
 
 const ProductCard = ({ product }) => {
   const { addToCart, isInCart } = useCart();
-  const inCart = isInCart(product.id);
+  const productId = product.id || product._id;
+  const inCart = isInCart(productId);
+  const rating = Number(product.rating ?? 0);
+  const reviewCount = Number(product.reviewCount ?? 0);
+  const stock = Number(product.stock ?? 0);
+  const imageSrc = product.images?.[0] || "https://placehold.co/400x300/1a1a2e/6366f1?text=No+Image";
 
   const handleAddToCart = (e) => {
     e.preventDefault();
@@ -13,13 +18,14 @@ const ProductCard = ({ product }) => {
     addToCart(product, 1);
   };
 
-  const stars = "★".repeat(Math.round(product.rating)) + "☆".repeat(5 - Math.round(product.rating));
+  const roundedRating = Math.max(0, Math.min(5, Math.round(rating)));
+  const stars = "★".repeat(roundedRating) + "☆".repeat(5 - roundedRating);
 
   return (
-    <Link to={`/product/${product.id}`} className="product-card">
+    <Link to={`/products/${productId}`} className="product-card">
       <div className="product-card__image-wrap">
         <img
-          src={product.images[0]}
+          src={imageSrc}
           alt={product.name}
           className="product-card__image"
           loading="lazy"
@@ -47,7 +53,7 @@ const ProductCard = ({ product }) => {
 
         <div className="product-card__rating">
           <span className="product-card__stars">{stars}</span>
-          <span className="product-card__rating-count">({product.reviewCount.toLocaleString()})</span>
+          <span className="product-card__rating-count">({reviewCount.toLocaleString()})</span>
         </div>
 
         <div className="product-card__price-row">
@@ -57,8 +63,8 @@ const ProductCard = ({ product }) => {
               <span className="product-card__original">{formatPrice(product.originalPrice)}</span>
             )}
           </div>
-          <span className={`product-card__stock ${product.stock < 10 ? "low" : ""}`}>
-            {product.stock < 10 ? `Only ${product.stock} left!` : "In Stock"}
+          <span className={`product-card__stock ${stock < 10 ? "low" : ""}`}>
+            {stock <= 0 ? "Out of Stock" : stock < 10 ? `Only ${stock} left!` : "In Stock"}
           </span>
         </div>
       </div>

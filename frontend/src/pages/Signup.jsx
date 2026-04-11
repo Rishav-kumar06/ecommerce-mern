@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import "./Auth.css";
 
 const Signup = () => {
   const { signup, loading, error, clearError } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isAdminAuthPath = location.pathname.startsWith("/admin/");
 
-  const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "" });
+  const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "", role: isAdminAuthPath ? "admin" : "user" });
   const [formErrors, setFormErrors] = useState({});
   const [showPw, setShowPw] = useState(false);
 
@@ -25,8 +27,8 @@ const Signup = () => {
     e.preventDefault();
     clearError();
     if (!validate()) return;
-    const res = await signup({ name: form.name.trim(), email: form.email, password: form.password });
-    if (res.success) navigate("/");
+    const res = await signup({ name: form.name.trim(), email: form.email.trim(), password: form.password, role: form.role });
+    if (res.success) navigate(form.role === "admin" ? "/admin" : "/");
   };
 
   const set = (key, val) => {
@@ -39,9 +41,9 @@ const Signup = () => {
       <div className="auth-container">
         <div className="auth-card">
           <div className="auth-header">
-            <Link to="/" className="auth-logo">⚡ ShopNest</Link>
+            <Link to="/" className="auth-logo">⚡ JhaHub</Link>
             <h1 className="auth-title">Create Account</h1>
-            <p className="auth-subtitle">Join ShopNest and start shopping today</p>
+            <p className="auth-subtitle">{isAdminAuthPath ? "Create your admin account" : "Join JhaHub and start shopping today"}</p>
           </div>
 
           {error && <div className="auth-error-banner">⚠ {error}</div>}
@@ -60,6 +62,16 @@ const Signup = () => {
                 value={form.email} onChange={(e) => set("email", e.target.value)} autoComplete="email" />
               {formErrors.email && <span className="auth-field-error">{formErrors.email}</span>}
             </div>
+
+            {!isAdminAuthPath && (
+              <div className="form-group">
+                <label className="form-label">Account Type</label>
+                <select className="form-select" value={form.role} onChange={(e) => set("role", e.target.value)}>
+                  <option value="user">Customer</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+            )}
 
             <div className="form-group">
               <label className="form-label">Password</label>
@@ -90,7 +102,7 @@ const Signup = () => {
           </form>
 
           <p className="auth-switch">
-            Already have an account? <Link to="/login">Sign in →</Link>
+            Already have an account? <Link to={isAdminAuthPath ? "/admin/login" : "/login"}>Sign in →</Link>
           </p>
         </div>
       </div>

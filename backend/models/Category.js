@@ -11,7 +11,11 @@ const categorySchema = new mongoose.Schema(
     description: String,
     color: String,
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+  }
 );
 
 const Category = mongoose.model("Category", categorySchema);

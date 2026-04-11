@@ -80,7 +80,7 @@ const Checkout = () => {
       }, token);
       // clear cart immediately so UI and localStorage are reset
       clearCart();
-      try { localStorage.removeItem("shopnest_cart"); } catch (e) {}
+      try { localStorage.removeItem("jhahub_cart"); } catch (e) {}
       setOrderId(res.data.id);
     } catch (err) {
       alert("Order failed: " + err.message);

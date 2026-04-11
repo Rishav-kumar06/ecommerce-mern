@@ -7,7 +7,9 @@ export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState(() => {
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_KEYS.CART);
-      return stored ? JSON.parse(stored) : [];
+      const parsed = stored ? JSON.parse(stored) : [];
+      // Clean up potentially corrupted items (from before ID fix)
+      return Array.isArray(parsed) ? parsed.filter(item => item.id != null) : [];
     } catch {
       return [];
     }
@@ -19,16 +21,17 @@ export const CartProvider = ({ children }) => {
   }, [cartItems]);
 
   const addToCart = (product, quantity = 1) => {
+    const normalizedProduct = { ...product, id: product.id || product._id };
     setCartItems((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
+      const existing = prev.find((item) => item.id === normalizedProduct.id);
       if (existing) {
         return prev.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: Math.min(item.quantity + quantity, product.stock) }
+          item.id === normalizedProduct.id
+            ? { ...item, quantity: Math.min(item.quantity + quantity, normalizedProduct.stock) }
             : item
         );
       }
-      return [...prev, { ...product, quantity }];
+      return [...prev, { ...normalizedProduct, quantity }];
     });
   };
 

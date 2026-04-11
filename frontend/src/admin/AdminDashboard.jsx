@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { fetchOrders, fetchUsers } from "../services/fakeApi";
 import { useProducts } from "../context/ProductContext";
 import { formatPrice, getStatusColor, getStatusBg, formatDate } from "../utils/helpers";
+import { LOCAL_STORAGE_KEYS } from "../utils/constants";
 import Loader from "../components/Loader";
 
 const AdminDashboard = () => {
@@ -10,17 +11,37 @@ const AdminDashboard = () => {
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    Promise.all([fetchOrders(), fetchUsers()])
-      .then(([ordersRes, usersRes]) => {
-        setOrders(ordersRes.data);
-        setUsers(usersRes.data);
-      })
-      .finally(() => setLoading(false));
+    const load = async () => {
+      try {
+        const token = localStorage.getItem(LOCAL_STORAGE_KEYS.TOKEN);
+        const [ordersRes, usersRes] = await Promise.all([fetchOrders(token), fetchUsers(token)]);
+        setOrders(ordersRes.data || []);
+        setUsers(usersRes.data || []);
+      } catch (err) {
+        setError(err.message || "Failed to load dashboard data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
   }, []);
 
   if (loading) return <Loader fullPage message="Loading Dashboard..." />;
+
+  if (error) {
+    return (
+      <div className="admin-page">
+        <div className="admin-panel" style={{ padding: "1.5rem" }}>
+          <h2 className="admin-page__title">Dashboard unavailable</h2>
+          <p className="text-muted">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
   const pendingOrders = orders.filter((o) => o.status === "pending" || o.status === "processing");
@@ -91,12 +112,12 @@ const AdminDashboard = () => {
               </thead>
               <tbody>
                 {recentOrders.map((order) => {
-                  const customer = users.find((u) => u.id === order.userId);
+                  const customer = order.user?.name || users.find((u) => u.id === order.userId)?.name;
                   return (
                     <tr key={order.id}>
                       <td className="font-mono">{order.id}</td>
                       <td>{formatDate(order.createdAt)}</td>
-                      <td>{customer?.name || "Unknown"}</td>
+                      <td>{customer || "Unknown"}</td>
                       <td>
                         <span className="admin-badge" style={{ backgroundColor: getStatusBg(order.status), color: getStatusColor(order.status) }}>
                           {order.status}

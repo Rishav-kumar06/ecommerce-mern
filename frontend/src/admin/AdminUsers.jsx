@@ -1,18 +1,29 @@
 import { useState, useEffect } from "react";
 import { fetchUsers } from "../services/fakeApi";
 import { formatDate } from "../utils/helpers";
+import { LOCAL_STORAGE_KEYS } from "../utils/constants";
 import Loader from "../components/Loader";
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchUsers().then((res) => {
-      setUsers(res.data);
-      setLoading(false);
-    });
+    const loadUsers = async () => {
+      try {
+        const token = localStorage.getItem(LOCAL_STORAGE_KEYS.TOKEN);
+        const res = await fetchUsers(token);
+        setUsers(res.data || []);
+      } catch (err) {
+        setError(err.message || "Failed to load users");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUsers();
   }, []);
 
   const filtered = users.filter((u) =>
@@ -21,6 +32,17 @@ const AdminUsers = () => {
   );
 
   if (loading) return <Loader fullPage message="Loading users..." />;
+
+  if (error) {
+    return (
+      <div className="admin-page">
+        <div className="admin-panel" style={{ padding: "1.5rem" }}>
+          <h2 className="admin-page__title">Users unavailable</h2>
+          <p className="text-muted">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-page">

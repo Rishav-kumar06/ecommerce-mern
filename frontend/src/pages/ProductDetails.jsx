@@ -39,9 +39,12 @@ const ProductDetails = () => {
   if (loading) return <Loader fullPage message="Loading product..." />;
   if (!product) return null;
 
-  const inCart = isInCart(product.id);
-  const cartQty = getItemQuantity(product.id);
-  const stars = "★".repeat(Math.round(product.rating)) + "☆".repeat(5 - Math.round(product.rating));
+  const inCart = isInCart(product.id || product._id);
+  const cartQty = getItemQuantity(product.id || product._id);
+  const rating = Number(product.rating ?? 0);
+  const reviewCount = Number(product.reviewCount ?? 0);
+  const roundedRating = Math.max(0, Math.min(5, Math.round(rating)));
+  const stars = "★".repeat(roundedRating) + "☆".repeat(5 - roundedRating);
 
   const handleAddToCart = () => {
     addToCart(product, quantity);
@@ -100,8 +103,8 @@ const ProductDetails = () => {
 
             <div className="product-details__rating">
               <span className="product-details__stars">{stars}</span>
-              <span className="product-details__rating-num">{product.rating}</span>
-              <span className="product-details__review-count">({product.reviewCount.toLocaleString()} reviews)</span>
+              <span className="product-details__rating-num">{rating.toFixed(1)}</span>
+              <span className="product-details__review-count">({reviewCount.toLocaleString()} reviews)</span>
             </div>
 
             <div className="product-details__price-block">

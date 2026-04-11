@@ -37,11 +37,23 @@
 .profile-order__id { font-size: 0.875rem; font-weight: 600; display: block; }
 .profile-order__date { font-size: 0.75rem; color: var(--text-muted); }
 .profile-order__status { font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.65rem; border-radius: var(--radius-full); text-transform: capitalize; }
+.profile-order__timeline { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--border); background: var(--bg-elevated); }
+.profile-step { display: inline-flex; align-items: center; gap: 0.4rem; border: 1px solid var(--border); border-radius: var(--radius-full); padding: 0.2rem 0.6rem; text-transform: capitalize; font-size: 0.72rem; color: var(--text-muted); }
+.profile-step__dot { width: 8px; height: 8px; border-radius: 999px; background: var(--text-muted); }
+.profile-step--active { color: #4f46e5; border-color: rgba(79, 70, 229, 0.35); background: rgba(79, 70, 229, 0.08); }
+.profile-step--active .profile-step__dot { background: #4f46e5; }
+.profile-step--done { color: #0f766e; border-color: rgba(15, 118, 110, 0.35); background: rgba(16, 185, 129, 0.1); }
+.profile-step--done .profile-step__dot { background: #059669; }
+.profile-order__cancelled { font-size: 0.8rem; color: #b91c1c; font-weight: 600; }
+.profile-order__status-note { padding: 0.65rem 1.25rem; font-size: 0.82rem; color: var(--text-secondary); border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--bg-card) 85%, #4f46e5 15%); }
 .profile-order__items { display: flex; flex-direction: column; gap: 0; }
 .profile-order__item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--border); }
 .profile-order__item img { width: 42px; height: 42px; border-radius: var(--radius-sm); object-fit: cover; flex-shrink: 0; }
 .profile-order__item-info { flex: 1; display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.85rem; }
+.profile-order__item-actions { display: flex; align-items: center; justify-content: flex-end; min-width: 120px; }
+.profile-order__item-cancelled { font-size: 0.75rem; font-weight: 700; color: #b91c1c; background: rgba(185, 28, 28, 0.1); border: 1px solid rgba(185, 28, 28, 0.3); border-radius: var(--radius-full); padding: 0.2rem 0.55rem; }
 .profile-order__footer { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1.25rem; background: var(--bg-elevated); font-size: 0.8rem; }
+.profile-order__footer-right { display: inline-flex; align-items: center; gap: 0.6rem; }
 .profile-order__total { font-weight: 700; }
 
 /* Info */

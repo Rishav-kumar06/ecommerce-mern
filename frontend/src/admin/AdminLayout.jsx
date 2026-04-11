@@ -14,7 +14,7 @@ const AdminLayout = () => {
       {/* Sidebar */}
       <aside className="admin-sidebar">
         <div className="admin-sidebar__header">
-          <Link to="/" className="admin-logo">⚡ ShopNest Admin</Link>
+          <Link to="/" className="admin-logo">⚡ JhaHub Admin</Link>
         </div>
 
         <nav className="admin-nav">

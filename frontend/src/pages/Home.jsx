@@ -41,7 +41,7 @@ const HERO_SLIDES = [
 const PROMO_BANNERS = [
   {
     title: "Free Shipping",
-    desc: "On all orders over $100",
+    desc: "On all orders over Rs 100",
     icon: "🚚",
     color: "#6366f1",
   },

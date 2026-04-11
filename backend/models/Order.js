@@ -6,6 +6,8 @@ const orderItemSchema = new mongoose.Schema({
   price: Number,
   quantity: Number,
   image: String,
+  status: { type: String, default: "active" },
+  cancelledAt: Date,
 });
 
 const orderSchema = new mongoose.Schema(

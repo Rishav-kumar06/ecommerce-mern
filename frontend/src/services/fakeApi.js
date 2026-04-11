@@ -13,8 +13,19 @@ const API = import.meta.env.VITE_API_URL || null;
 const apiFetch = async (url, opts = {}) => {
   const res = await fetch(url, opts);
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || res.statusText);
+    let message = res.statusText || "Request failed";
+    try {
+      const data = await res.json();
+      if (data?.message) {
+        message = data.message;
+      } else if (typeof data === "string") {
+        message = data;
+      }
+    } catch {
+      const text = await res.text();
+      if (text) message = text;
+    }
+    throw new Error(message);
   }
   return res.json();
 };
@@ -208,6 +219,53 @@ export const updateOrderStatus = async (orderId, status, token) => {
     method: "PUT",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({ status }),
+  });
+};
+
+export const cancelMyOrder = async (orderId, token) => {
+  if (!API) {
+    await loadMocks();
+    await delay();
+    const order = mockOrders.find((o) => o.id === orderId);
+    if (!order) throw new Error("Order not found");
+    if (!["pending", "processing"].includes(order.status)) {
+      throw new Error("Only pending or processing orders can be cancelled");
+    }
+    order.status = "cancelled";
+    return { data: order, success: true };
+  }
+
+  return apiFetch(`${API}/api/orders/${orderId}/cancel`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
+export const cancelOrderItem = async (orderId, itemIndex, token) => {
+  if (!API) {
+    await loadMocks();
+    await delay();
+    const order = mockOrders.find((o) => o.id === orderId);
+    if (!order) throw new Error("Order not found");
+    if (!["pending", "processing"].includes(order.status)) {
+      throw new Error("Items can be cancelled only when order is pending or processing");
+    }
+    if (!order.items?.[itemIndex]) {
+      throw new Error("Order item not found");
+    }
+    order.items[itemIndex].status = "cancelled";
+    order.items[itemIndex].cancelledAt = new Date().toISOString();
+    const activeItems = order.items.filter((item) => (item.status || "active") !== "cancelled");
+    order.total = activeItems.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 0), 0);
+    if (activeItems.length === 0) {
+      order.status = "cancelled";
+    }
+    return { data: order, success: true };
+  }
+
+  return apiFetch(`${API}/api/orders/${orderId}/items/${itemIndex}/cancel`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
   });
 };
 
