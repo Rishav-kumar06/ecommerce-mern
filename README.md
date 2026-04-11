@@ -139,7 +139,7 @@ npm start
 * Protected routes for admin and users
 
 ---
-
+## FUTURE ENHANCEMENTS
 ## 💳 Payment Integration
 
 * Integrated with **Stripe / Razorpay**
